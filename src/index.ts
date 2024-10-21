@@ -1,41 +1,58 @@
 import { Hono } from "hono";
 import { parseHTML } from "linkedom/worker";
 import * as Plot from "@observablehq/plot";
-import encode from "./data-wrangler";
+import { encode, decode } from "./data-wrangler";
 
 const app = new Hono();
 
 app.get("/", (c) => {
   return c.html(
-    `<!DOCTYPE html><html><body><img src="/chart.svg" /></body></html>`
+    `<!DOCTYPE html><html><body><img src="/chart.svg?w=580&h=180&d0=caaageehox301yusuurywwqmjdghhhjmrt0yywwuqrs2yslkgfahnomqux666zzvttv0wsmkgdbhmnlrsz6795420xtvtrnjgdadkopqqv256520zxsssokfdZZbeffjltwzzzxussuywrmgbYWaeefjmu100ywsqqrvuoidb&ymin=0&ymax=160000000" /></body></html>`
   );
 });
 
+app.get("/decode", (c) => {
+  const { d0, ymin, ymax } = c.req.query();
+  const data = decode(d0, parseFloat(ymin), parseFloat(ymax));
+  return c.json(data);
+});
+
+// ymin=0&ymax=160000000&t=1+week+@+1+hour&step=1
+
 app.get("/chart.svg", (c) => {
-  const data = Array.from({ length: 40 }, () =>
-    Math.floor(Math.random() * 100)
-  );
+  const { w, h, d0, ymin, ymax } = c.req.query();
+  const data = decode(d0, parseFloat(ymin), parseFloat(ymax));
 
   const { document } = parseHTML("<!DOCTYPE html><html><body></body></html>");
 
   const plot = Plot.plot({
     document: document,
-    width: 640,
-    height: 400,
+    width: parseInt(w) || 600,
+    height: parseInt(h) || 250,
     y: {
       grid: true,
       label: "Value ↑",
-      domain: [0, Math.max(...data) * 1.1],
+      domain: [0, parseFloat(ymax) * 1.1],
       nice: true,
-      inset: 10,
+      inset: 0,
+      line: true,
+      tickFormat: (d) => {
+        if (d >= 1_000_000) {
+          return `${(d / 1_000_000).toFixed(0)}M`;
+        } else if (d >= 1_000) {
+          return `${(d / 1_000).toFixed(0)}K`;
+        }
+        return d.toString();
+      },
     },
     x: {
       label: "Step →",
-      inset: 6,
+      inset: 0,
+      line: true,
     },
-    marginTop: 40,
+    marginTop: 20,
     marginRight: 40,
-    marginBottom: 40,
+    marginBottom: 20,
     marginLeft: 60,
     style: {
       background: "transparent",
@@ -44,13 +61,16 @@ app.get("/chart.svg", (c) => {
     marks: [
       Plot.areaY(data, {
         x: (d, i) => i,
-        y2: 0,
+        y: (d) => d,
+        y2: () => 0,
         curve: "step-after",
         fill: "lightblue",
         fillOpacity: 0.6,
+        stroke: null,
       }),
       Plot.lineY(data, {
         x: (d, i) => i,
+        y: (d) => d,
         curve: "step-after",
         stroke: "steelblue",
         strokeWidth: 2,
