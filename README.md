@@ -1,3 +1,3 @@
-# btpl-svig
+# SViG
 
-BitPulse SViG - fast chart rendering to SVG, embeddable in most places (Web, Discord, Slack etc).
+SViG - fast chart rendering to SVG, embeddable in most places (Web, Discord, Slack etc).

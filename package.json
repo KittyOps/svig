@@ -1,5 +1,5 @@
 {
-  "name": "btpl-svig",
+  "name": "svig",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify"
